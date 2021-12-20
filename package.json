@@ -1,0 +1,30 @@
+{
+  "name": "zaphy",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZephraCloud/zaphy.git"
+  },
+  "keywords": [
+    "discord",
+    "zaphy",
+    "zephra"
+  ],
+  "author": "zephra",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ZephraCloud/zaphy/issues"
+  },
+  "homepage": "https://github.com/ZephraCloud/zaphy#readme",
+  "dependencies": {
+    "@discordjs/builders": "^0.9.0",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "discord-api-types": "^0.25.2",
+    "discord.js": "^13.3.1"
+  }
+}
