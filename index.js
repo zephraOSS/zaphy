@@ -313,7 +313,10 @@ async function musicPlay(guild, interaction = false) {
     });
 
     player.on("idle", () => {
-        connection.destroy();
+        songs.shift();
+
+        if (songs.length === 0) connection.destroy();
+        else musicPlay(guild);
     });
 }
 
