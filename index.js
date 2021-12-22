@@ -190,6 +190,8 @@ async function musicSetup(interaction) {
     let searchQuery = interaction.options.getString("search"),
         serverQueue = musicQueue.get(interaction.guild.id);
 
+    await interaction.deferReply({});
+
     if (!isValidURL(searchQuery)) {
         searchQuery = await getSongBySearch(
             interaction.options.getString("search")
@@ -263,9 +265,9 @@ async function musicSetup(interaction) {
                     interaction.user.avatarURL()
                 );
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         } else {
-            await interaction.reply(
+            await interaction.editReply(
                 `Added to queue: **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
             );
         }
@@ -304,7 +306,7 @@ async function musicPlay(guild, interaction = false) {
             )
             .setFooter(user.tag || "Unknown", user.avatarURL());
 
-        if (interaction) await interaction.reply({ embeds: [embed] });
+        if (interaction) await interaction.editReply({ embeds: [embed] });
         else textChannel.send({ embeds: [embed] });
     } else {
         textChannel.send(
