@@ -21,6 +21,8 @@ const Discord = require("discord.js"),
         getSongBySearch,
     } = require("./utils/music");
 
+let musicQueue = new Map();
+
 client.on("ready", () => {
     const guilds = client.guilds.cache;
 
@@ -135,63 +137,7 @@ client.on("interactionCreate", async (interaction) => {
             await interaction.reply({ embeds: [embed] });
         }
     } else if (commandName === "play") {
-        const member = interaction.guild.members.cache.find(
-                (member) => member.id === interaction.user.id
-            ),
-            voiceChannel = member?.voice.channel;
-
-        if (!voiceChannel)
-            return await interaction.reply("You are not in a voice channel!");
-
-        let searchQuery = interaction.options.getString("search");
-
-        if (!isValidURL(searchQuery)) {
-            searchQuery = await getSongBySearch(
-                interaction.options.getString("search")
-            );
-
-            searchQuery = searchQuery.all[0];
-        } else searchQuery = { url: searchQuery };
-
-        const connection = createConnection(interaction.guild, voiceChannel.id),
-            stream = createStream(searchQuery.url),
-            resource = createResource(stream),
-            player = createPlayer(resource, stream),
-            songInfo = await getSongInfo(searchQuery.url);
-
-        if (!resource) return await interaction.reply("There was an error!");
-
-        if (searchQuery.thumbnail) {
-            const embed = new Discord.MessageEmbed()
-                .setColor("#A1D3F2")
-                .setThumbnail(searchQuery.thumbnail)
-                .addField(
-                    "Name",
-                    searchQuery.title || "Unknown",
-                    false
-                )
-                .addField(
-                    "Views",
-                    searchQuery.views.toLocaleString() || "Unknown",
-                    true
-                )
-                .addField(
-                    "Author",
-                    `[${searchQuery.author.name}](${searchQuery.author.url})`,
-                    true
-                );
-
-            await interaction.reply({ embeds: [embed] });
-        } else {
-            await interaction.reply(
-                `Now playing **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
-            );
-        }
-
-        player.play(resource);
-        connection.subscribe(player);
-
-        player.on("idle", () => connection.destroy());
+        musicSetup(interaction);
     }
 });
 
@@ -225,6 +171,150 @@ function createBasicCommands(guildId) {
     ].map((command) => command.toJSON());
 
     submitSlashCommands(commands, guildId);
+}
+
+/**
+ * @param {Discord.Interaction} interaction
+ */
+async function musicSetup(interaction) {
+    const member = interaction.guild.members.cache.find(
+            (member) => member.id === interaction.user.id
+        ),
+        voiceChannel = member?.voice.channel;
+
+    if (!voiceChannel)
+        return await interaction.reply("You are not in a voice channel!");
+
+    let searchQuery = interaction.options.getString("search"),
+        serverQueue = musicQueue.get(interaction.guild.id);
+
+    if (!isValidURL(searchQuery)) {
+        searchQuery = await getSongBySearch(
+            interaction.options.getString("search")
+        );
+
+        searchQuery = searchQuery.all[0];
+    } else searchQuery = { url: searchQuery };
+
+    const songInfo = await getSongInfo(searchQuery.url);
+
+    if (!serverQueue) {
+        const queueContruct = {
+            textChannel: interaction.channel,
+            voiceChannel: voiceChannel,
+            connection: createConnection(interaction.guild, voiceChannel.id),
+            songs: [],
+            volume: 5,
+            playing: true,
+        };
+
+        musicQueue.set(interaction.guild.id, queueContruct);
+
+        queueContruct.songs.push(searchQuery);
+
+        serverQueue = musicQueue.get(interaction.guild.id);
+
+        try {
+            musicPlay(interaction.guild, interaction);
+        } catch (err) {
+            console.log("[MUSIC]", err);
+            serverQueue.delete(interaction.guild.id);
+
+            return await interaction.channel.send(err);
+        }
+    } else {
+        serverQueue.songs.push(searchQuery);
+
+        if (searchQuery.thumbnail) {
+            const embed = new Discord.MessageEmbed()
+                .setColor("#A1D3F2")
+                .setTitle("Added to queue")
+                .setThumbnail(searchQuery.thumbnail)
+                .addField(
+                    "Name",
+                    `[${searchQuery.title}](${searchQuery.url})`,
+                    false
+                )
+                .addField(
+                    "Views",
+                    searchQuery.views.toLocaleString() || "Unknown",
+                    true
+                )
+                .addField(
+                    "Duration",
+                    searchQuery.duration.timestamp || "Unknown",
+                    true
+                )
+                .addField(
+                    "Author",
+                    `[${searchQuery.author.name}](${searchQuery.author.url})`,
+                    true
+                );
+
+            await interaction.reply({ embeds: [embed] });
+        } else {
+            await interaction.reply(
+                `Added to queue: **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
+            );
+        }
+    }
+}
+
+/**
+ * Play music
+ * @param {Discord.Guild} guild
+ * @param {Discord.Interaction} interaction
+ */
+async function musicPlay(guild, interaction = false) {
+    const serverQueue = musicQueue.get(guild.id);
+
+    if (!serverQueue) return;
+
+    const { textChannel, connection, songs } = serverQueue;
+
+    if (songs.length === 0) return musicQueue.delete(guild.id);
+
+    const song = songs[0];
+
+    if (song.thumbnail) {
+        const embed = new Discord.MessageEmbed()
+            .setColor("#A1D3F2")
+            .setTitle("Now playing")
+            .setThumbnail(song.thumbnail)
+            .addField("Name", `[${song.title}](${song.url})`, false)
+            .addField("Views", song.views.toLocaleString() || "Unknown", true)
+            .addField("Duration", song.duration.timestamp || "Unknown", true)
+            .addField(
+                "Author",
+                `[${song.author.name}](${song.author.url})`,
+                true
+            );
+
+        if (interaction) await interaction.reply({ embeds: [embed] });
+        else textChannel.send({ embeds: [embed] });
+    } else {
+        textChannel.send(
+            `Now playing **${song.videoDetails.title}** from **${song.videoDetails.author.name}**`
+        );
+    }
+
+    const stream = createStream(song.url),
+        resource = createResource(stream),
+        player = createPlayer(resource, stream);
+
+    if (!resource) return;
+
+    player.play(resource);
+    connection.subscribe(player);
+
+    player.on("finish", () => {
+        songs.shift();
+        musicPlay(guild);
+    });
+
+    player.on("idle", () => {
+        connection.destroy();
+    });
 }
 
 client.login(config.discord.token);
