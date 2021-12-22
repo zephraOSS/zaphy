@@ -315,8 +315,10 @@ async function musicPlay(guild, interaction = false) {
     player.on("idle", () => {
         songs.shift();
 
-        if (songs.length === 0) connection.destroy();
-        else musicPlay(guild);
+        if (songs.length === 0) {
+            connection.destroy();
+            musicQueue.delete(guild.id);
+        } else musicPlay(guild);
     });
 }
 
