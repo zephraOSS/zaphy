@@ -136,9 +136,9 @@ client.on("interactionCreate", async (interaction) => {
 
             await interaction.reply({ embeds: [embed] });
         }
-    } else if (commandName === "play") {
-        musicSetup(interaction);
-    }
+    } else if (commandName === "play") musicSetup(interaction);
+    else if (commandName === "skip") musicSkip(interaction);
+    else if (commandName === "stop") musicStop(interaction);
 });
 
 /**
@@ -147,8 +147,8 @@ client.on("interactionCreate", async (interaction) => {
  */
 function createBasicCommands(guildId) {
     const commands = [
-        createSlashCommand("ping", "Replies with pong!", []),
-        createSlashCommand("server", "Replies with server info!", []),
+        createSlashCommand("ping", "Replies with pong!", {}),
+        createSlashCommand("server", "Replies with server info!", {}),
         createSlashCommand("user", "Replies with user info!", {
             options: [
                 {
@@ -168,6 +168,8 @@ function createBasicCommands(guildId) {
                 },
             ],
         }),
+        createSlashCommand("skip", "Skips the current song", {}),
+        createSlashCommand("stop", "Stops the music", {}),
     ].map((command) => command.toJSON());
 
     submitSlashCommands(commands, guildId);
@@ -210,7 +212,10 @@ async function musicSetup(interaction) {
 
         musicQueue.set(interaction.guild.id, queueContruct);
 
-        queueContruct.songs.push(searchQuery);
+        queueContruct.songs.push({
+            song: searchQuery,
+            user: interaction.user,
+        });
 
         serverQueue = musicQueue.get(interaction.guild.id);
 
@@ -223,7 +228,10 @@ async function musicSetup(interaction) {
             return await interaction.channel.send(err);
         }
     } else {
-        serverQueue.songs.push(searchQuery);
+        serverQueue.songs.push({
+            song: searchQuery,
+            user: interaction.user,
+        });
 
         if (searchQuery.thumbnail) {
             const embed = new Discord.MessageEmbed()
@@ -249,6 +257,10 @@ async function musicSetup(interaction) {
                     "Author",
                     `[${searchQuery.author.name}](${searchQuery.author.url})`,
                     true
+                )
+                .setFooter(
+                    interaction.user.tag || "Unknown",
+                    interaction.user.avatarURL()
                 );
 
             await interaction.reply({ embeds: [embed] });
@@ -274,7 +286,8 @@ async function musicPlay(guild, interaction = false) {
 
     if (songs.length === 0) return musicQueue.delete(guild.id);
 
-    const song = songs[0];
+    const song = songs[0].song,
+        user = songs[0].user;
 
     if (song.thumbnail) {
         const embed = new Discord.MessageEmbed()
@@ -288,7 +301,8 @@ async function musicPlay(guild, interaction = false) {
                 "Author",
                 `[${song.author.name}](${song.author.url})`,
                 true
-            );
+            )
+            .setFooter(user.tag || "Unknown", user.avatarURL());
 
         if (interaction) await interaction.reply({ embeds: [embed] });
         else textChannel.send({ embeds: [embed] });
@@ -320,6 +334,44 @@ async function musicPlay(guild, interaction = false) {
             musicQueue.delete(guild.id);
         } else musicPlay(guild);
     });
+}
+
+/**
+ * Skip music
+ * @param {Discord.Interaction} interaction
+ */
+async function musicSkip(interaction) {
+    const serverQueue = musicQueue.get(interaction.guild.id),
+        voiceChannel = interaction.guild.members.cache.find(
+            (member) => member.id === interaction.user.id
+        )?.voice.channel;
+
+    if (!serverQueue) return interaction.reply("There is nothing to skip!");
+    if (!voiceChannel)
+        return interaction.reply("You are not in a voice channel!");
+
+    serverQueue.songs.shift();
+
+    musicPlay(interaction.guild);
+
+    await interaction.reply("Skipped the current song!");
+}
+
+async function musicStop(interaction) {
+    const serverQueue = musicQueue.get(interaction.guild.id),
+        voiceChannel = interaction.guild.members.cache.find(
+            (member) => member.id === interaction.user.id
+        )?.voice.channel;
+
+    if (!serverQueue) return interaction.reply("There is nothing to stop!");
+    if (!voiceChannel)
+        return interaction.reply("You are not in a voice channel!");
+
+    serverQueue.songs = [];
+    serverQueue.connection.destroy();
+    musicQueue.delete(interaction.guild.id);
+
+    await interaction.reply("Stopped the music!");
 }
 
 client.login(config.discord.token);
