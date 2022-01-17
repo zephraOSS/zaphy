@@ -10,24 +10,17 @@ const Discord = require("discord.js"),
         ],
         partials: ["CHANNEL"],
     }),
-    { isValidURL } = require("./utils/functions"),
     { createSlashCommand, submitSlashCommands } = require("./utils/commands"),
-    {
-        createConnection,
-        createStream,
-        createResource,
-        createPlayer,
-        getSongInfo,
-        getSongBySearch,
-    } = require("./utils/music");
-
-let musicQueue = new Map();
+    Music = require("./managers/music.js"),
+    music = new Music();
 
 client.on("ready", () => {
     const guilds = client.guilds.cache;
 
     console.log(`[READY] ${client.user.username} was started`);
     console.log(`[READY] ${guilds.size} guilds were found`);
+
+    createGlobalCommands();
 
     guilds.forEach((guild) => {
         console.log(`[READY] Creating basic commands for ${guild.name}`);
@@ -136,9 +129,9 @@ client.on("interactionCreate", async (interaction) => {
 
             await interaction.reply({ embeds: [embed] });
         }
-    } else if (commandName === "play") musicSetup(interaction);
-    else if (commandName === "skip") musicSkip(interaction);
-    else if (commandName === "stop") musicStop(interaction);
+    } else if (commandName === "play") music.setup(interaction);
+    else if (commandName === "skip") music.skip(interaction);
+    else if (commandName === "stop") music.stop(interaction);
 });
 
 /**
@@ -146,6 +139,12 @@ client.on("interactionCreate", async (interaction) => {
  * @param {string} guildId
  */
 function createBasicCommands(guildId) {
+    const commands = [].map((command) => command.toJSON());
+
+    submitSlashCommands(commands, guildId);
+}
+
+function createGlobalCommands() {
     const commands = [
         createSlashCommand("ping", "Replies with pong!", {}),
         createSlashCommand("server", "Replies with server info!", {}),
@@ -172,208 +171,7 @@ function createBasicCommands(guildId) {
         createSlashCommand("stop", "Stops the music", {}),
     ].map((command) => command.toJSON());
 
-    submitSlashCommands(commands, guildId);
-}
-
-/**
- * @param {Discord.Interaction} interaction
- */
-async function musicSetup(interaction) {
-    const member = interaction.guild.members.cache.find(
-            (member) => member.id === interaction.user.id
-        ),
-        voiceChannel = member?.voice.channel;
-
-    if (!voiceChannel)
-        return await interaction.reply("You are not in a voice channel!");
-
-    let searchQuery = interaction.options.getString("search"),
-        serverQueue = musicQueue.get(interaction.guild.id);
-
-    await interaction.deferReply({});
-
-    if (!isValidURL(searchQuery)) {
-        searchQuery = await getSongBySearch(
-            interaction.options.getString("search")
-        );
-
-        searchQuery = searchQuery.all[0];
-    } else searchQuery = { url: searchQuery };
-
-    const songInfo = await getSongInfo(searchQuery.url);
-
-    if (!serverQueue) {
-        const queueContruct = {
-            textChannel: interaction.channel,
-            voiceChannel: voiceChannel,
-            connection: createConnection(interaction.guild, voiceChannel.id),
-            songs: [],
-            volume: 5,
-            playing: true,
-        };
-
-        musicQueue.set(interaction.guild.id, queueContruct);
-
-        queueContruct.songs.push({
-            song: searchQuery,
-            user: interaction.user,
-        });
-
-        serverQueue = musicQueue.get(interaction.guild.id);
-
-        try {
-            musicPlay(interaction.guild, interaction);
-        } catch (err) {
-            console.log("[MUSIC]", err);
-            serverQueue.delete(interaction.guild.id);
-
-            return await interaction.channel.send(err);
-        }
-    } else {
-        serverQueue.songs.push({
-            song: searchQuery,
-            user: interaction.user,
-        });
-
-        if (searchQuery.thumbnail) {
-            const embed = new Discord.MessageEmbed()
-                .setColor("#A1D3F2")
-                .setTitle("Added to queue")
-                .setThumbnail(searchQuery.thumbnail)
-                .addField(
-                    "Name",
-                    `[${searchQuery.title}](${searchQuery.url})`,
-                    false
-                )
-                .addField(
-                    "Views",
-                    searchQuery.views.toLocaleString() || "Unknown",
-                    true
-                )
-                .addField(
-                    "Duration",
-                    searchQuery.duration.timestamp || "Unknown",
-                    true
-                )
-                .addField(
-                    "Author",
-                    `[${searchQuery.author.name}](${searchQuery.author.url})`,
-                    true
-                )
-                .setFooter(
-                    interaction.user.tag || "Unknown",
-                    interaction.user.avatarURL()
-                );
-
-            await interaction.editReply({ embeds: [embed] });
-        } else {
-            await interaction.editReply(
-                `Added to queue: **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
-            );
-        }
-    }
-}
-
-/**
- * Play music
- * @param {Discord.Guild} guild
- * @param {Discord.Interaction} interaction
- */
-async function musicPlay(guild, interaction = false) {
-    const serverQueue = musicQueue.get(guild.id);
-
-    if (!serverQueue) return;
-
-    const { textChannel, connection, songs } = serverQueue;
-
-    if (songs.length === 0) return musicQueue.delete(guild.id);
-
-    const song = songs[0].song,
-        user = songs[0].user;
-
-    if (song.thumbnail) {
-        const embed = new Discord.MessageEmbed()
-            .setColor("#A1D3F2")
-            .setTitle("Now playing")
-            .setThumbnail(song.thumbnail)
-            .addField("Name", `[${song.title}](${song.url})`, false)
-            .addField("Views", song.views.toLocaleString() || "Unknown", true)
-            .addField("Duration", song.duration.timestamp || "Unknown", true)
-            .addField(
-                "Author",
-                `[${song.author.name}](${song.author.url})`,
-                true
-            )
-            .setFooter(user.tag || "Unknown", user.avatarURL());
-
-        if (interaction) await interaction.editReply({ embeds: [embed] });
-        else textChannel.send({ embeds: [embed] });
-    } else {
-        textChannel.send(
-            `Now playing **${song.videoDetails.title}** from **${song.videoDetails.author.name}**`
-        );
-    }
-
-    const stream = createStream(song.url),
-        resource = createResource(stream),
-        player = createPlayer(resource, stream);
-
-    if (!resource) return;
-
-    player.play(resource);
-    connection.subscribe(player);
-
-    player.on("finish", () => {
-        songs.shift();
-        musicPlay(guild);
-    });
-
-    player.on("idle", () => {
-        songs.shift();
-
-        if (songs.length === 0) {
-            connection.destroy();
-            musicQueue.delete(guild.id);
-        } else musicPlay(guild);
-    });
-}
-
-/**
- * Skip music
- * @param {Discord.Interaction} interaction
- */
-async function musicSkip(interaction) {
-    const serverQueue = musicQueue.get(interaction.guild.id),
-        voiceChannel = interaction.guild.members.cache.find(
-            (member) => member.id === interaction.user.id
-        )?.voice.channel;
-
-    if (!serverQueue) return interaction.reply("There is nothing to skip!");
-    if (!voiceChannel)
-        return interaction.reply("You are not in a voice channel!");
-
-    serverQueue.songs.shift();
-
-    musicPlay(interaction.guild);
-
-    await interaction.reply("Skipped the current song!");
-}
-
-async function musicStop(interaction) {
-    const serverQueue = musicQueue.get(interaction.guild.id),
-        voiceChannel = interaction.guild.members.cache.find(
-            (member) => member.id === interaction.user.id
-        )?.voice.channel;
-
-    if (!serverQueue) return interaction.reply("There is nothing to stop!");
-    if (!voiceChannel)
-        return interaction.reply("You are not in a voice channel!");
-
-    serverQueue.songs = [];
-    serverQueue.connection.destroy();
-    musicQueue.delete(interaction.guild.id);
-
-    await interaction.reply("Stopped the music!");
+    submitSlashCommands(commands);
 }
 
 client.login(config.discord.token);
