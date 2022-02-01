@@ -38,100 +38,134 @@ client.on("interactionCreate", async (interaction) => {
 
     const { commandName } = interaction;
 
-    if (commandName === "ping") {
-        await interaction.reply("Pong!");
-    } else if (commandName === "server") {
-        const embed = new Discord.MessageEmbed()
-            .setColor("#A1D3F2")
-            .setThumbnail(interaction.guild.iconURL())
-            .addField(
-                "Name",
-                `${interaction.guild.name} (${interaction.guild.id})`,
-                false
-            )
-            .addField(
-                "Creation Date",
-                `<t:${Math.round(
-                    interaction.guild.createdTimestamp / 1000
-                )}:F>`,
-                false
-            )
-            .addField(
-                "Roles",
-                interaction.guild.roles.cache
-                    .map((r) => `\`${r.name}\``)
-                    .join(", ") || "Not available",
-                false
-            );
+    switch (commandName) {
+        case "ping": {
+            await interaction.reply("Pong!");
 
-        await interaction.reply({ embeds: [embed] });
-    } else if (commandName === "user") {
-        const user = interaction.options.getUser("user");
-
-        if (user) {
-            const member = interaction.guild.members.cache.find(
-                    (member) => member.id === user.id
-                ),
-                embed = new Discord.MessageEmbed()
-                    .setColor("#A1D3F2")
-                    .setThumbnail(user.avatarURL())
-                    .addField("Name", `${user.tag} (${user.id})`, false)
-                    .addField(
-                        "Join Date",
-                        `<t:${Math.round(member.joinedTimestamp / 1000)}:F>`,
-                        false
-                    )
-                    .addField(
-                        "Creation Date",
-                        `<t:${Math.round(user.createdTimestamp / 1000)}:F>`,
-                        false
-                    )
-                    .addField(
-                        "Roles",
-                        member.roles.cache
-                            .map((r) => `\`${r.name}\``)
-                            .join(", ") || "Not available",
-                        false
-                    );
-
-            await interaction.reply({ embeds: [embed] });
-        } else {
-            const member = interaction.guild.members.cache.find(
-                    (member) => member.id === interaction.user.id
-                ),
-                embed = new Discord.MessageEmbed()
-                    .setColor("#A1D3F2")
-                    .setThumbnail(interaction.user.avatarURL())
-                    .addField(
-                        "Name",
-                        `${interaction.user.tag} (${interaction.user.id})`,
-                        false
-                    )
-                    .addField(
-                        "Join Date",
-                        `<t:${Math.round(member.joinedTimestamp / 1000)}:F>`,
-                        false
-                    )
-                    .addField(
-                        "Creation Date",
-                        `<t:${Math.round(
-                            interaction.user.createdTimestamp / 1000
-                        )}:F>`,
-                        false
-                    )
-                    .addField(
-                        "Roles",
-                        member.roles.cache
-                            .map((r) => `\`${r.name}\``)
-                            .join(", ") || "Not available",
-                        false
-                    );
-
-            await interaction.reply({ embeds: [embed] });
+            break;
         }
-    } else if (commandName === "play") music.setup(interaction);
-    else if (commandName === "skip") music.skip(interaction);
-    else if (commandName === "stop") music.stop(interaction);
+
+        case "server": {
+            const embed = new Discord.MessageEmbed()
+                .setColor("#A1D3F2")
+                .setThumbnail(interaction.guild.iconURL())
+                .addField(
+                    "Name",
+                    `${interaction.guild.name} (${interaction.guild.id})`,
+                    false
+                )
+                .addField(
+                    "Creation Date",
+                    `<t:${Math.round(
+                        interaction.guild.createdTimestamp / 1000
+                    )}:F>`,
+                    false
+                )
+                .addField(
+                    "Roles",
+                    interaction.guild.roles.cache
+                        .map((r) => `\`${r.name}\``)
+                        .join(", ") || "Not available",
+                    false
+                );
+
+            await interaction.reply({ embeds: [embed] });
+
+            break;
+        }
+
+        case "user": {
+            const user = interaction.options.getUser("user");
+
+            if (user) {
+                const member = interaction.guild.members.cache.find(
+                        (member) => member.id === user.id
+                    ),
+                    embed = new Discord.MessageEmbed()
+                        .setColor("#A1D3F2")
+                        .setThumbnail(user.avatarURL())
+                        .addField("Name", `${user.tag} (${user.id})`, false)
+                        .addField(
+                            "Join Date",
+                            `<t:${Math.round(
+                                member.joinedTimestamp / 1000
+                            )}:F>`,
+                            false
+                        )
+                        .addField(
+                            "Creation Date",
+                            `<t:${Math.round(user.createdTimestamp / 1000)}:F>`,
+                            false
+                        )
+                        .addField(
+                            "Roles",
+                            member.roles.cache
+                                .map((r) => `\`${r.name}\``)
+                                .join(", ") || "Not available",
+                            false
+                        );
+
+                await interaction.reply({ embeds: [embed] });
+
+                break;
+            } else {
+                const member = interaction.guild.members.cache.find(
+                        (member) => member.id === interaction.user.id
+                    ),
+                    embed = new Discord.MessageEmbed()
+                        .setColor("#A1D3F2")
+                        .setThumbnail(interaction.user.avatarURL())
+                        .addField(
+                            "Name",
+                            `${interaction.user.tag} (${interaction.user.id})`,
+                            false
+                        )
+                        .addField(
+                            "Join Date",
+                            `<t:${Math.round(
+                                member.joinedTimestamp / 1000
+                            )}:F>`,
+                            false
+                        )
+                        .addField(
+                            "Creation Date",
+                            `<t:${Math.round(
+                                interaction.user.createdTimestamp / 1000
+                            )}:F>`,
+                            false
+                        )
+                        .addField(
+                            "Roles",
+                            member.roles.cache
+                                .map((r) => `\`${r.name}\``)
+                                .join(", ") || "Not available",
+                            false
+                        );
+
+                await interaction.reply({ embeds: [embed] });
+
+                break;
+            }
+        }
+
+        case "play": {
+            music.setup(interaction);
+
+            break;
+        }
+
+        case "skip": {
+            music.skip(interaction);
+
+            break;
+        }
+
+        case "stop": {
+            music.stop(interaction);
+
+            break;
+        }
+    }
 });
 
 /**
