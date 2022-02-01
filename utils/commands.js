@@ -66,11 +66,9 @@ module.exports = {
     submitSlashCommands(commands, guildId = false) {
         if (!rest)
             return console.log("[COMMANDS] REST client is not initialized!");
-        if (!commands) return console.log("[COMMANDS] No commands given!");
-        if (!Array.isArray(commands))
-            return console.log("[COMMANDS] Commands must be an array!");
-        if (commands.length === 0)
-            return console.log("[COMMANDS] Commands array is empty!");
+        if (!commands) return "No commands given!";
+        if (!Array.isArray(commands)) return "Commands must be an array!";
+        if (commands.length === 0) return "Commands array is empty!";
 
         if (guildId) {
             rest.put(
