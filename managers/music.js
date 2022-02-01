@@ -162,7 +162,7 @@ class Music {
 
             if (interaction)
                 await interaction.editReply(
-                    `Added to queue: **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
+                    `Now playing **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
                 );
             else
                 textChannel.send(
