@@ -26,18 +26,14 @@ class Music {
         if (!voiceChannel)
             return await interaction.reply("You are not in a voice channel!");
 
-        let searchQuery = interaction.options.getString("search"),
-            serverQueue = this.musicQueue.get(interaction.guild.id);
-
         await interaction.deferReply({});
 
-        if (!isValidURL(searchQuery)) {
-            searchQuery = await getSongBySearch(
+        let searchQuery = await getSongBySearch(
                 interaction.options.getString("search")
-            );
+            ),
+            serverQueue = this.musicQueue.get(interaction.guild.id);
 
-            searchQuery = searchQuery.all[0];
-        } else searchQuery = { url: searchQuery };
+        searchQuery = searchQuery.all[0];
 
         const songInfo = await getSongInfo(searchQuery.url);
 
@@ -162,9 +158,16 @@ class Music {
             if (interaction) await interaction.editReply({ embeds: [embed] });
             else textChannel.send({ embeds: [embed] });
         } else {
-            textChannel.send(
-                `Now playing **${song.videoDetails.title}** from **${song.videoDetails.author.name}**`
-            );
+            const songInfo = await getSongInfo(song.url);
+
+            if (interaction)
+                await interaction.editReply(
+                    `Added to queue: **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
+                );
+            else
+                textChannel.send(
+                    `Now playing **${songInfo.videoDetails.title}** from **${songInfo.videoDetails.author.name}**`
+                );
         }
 
         const stream = createStream(song.url),
