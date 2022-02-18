@@ -1,5 +1,4 @@
 const Discord = require("discord.js"),
-    { isValidURL } = require("../utils/functions"),
     {
         createConnection,
         createStream,
@@ -234,6 +233,42 @@ class Music {
         this.musicQueue.delete(interaction.guild.id);
 
         await interaction.reply("Stopped the music!");
+    }
+
+    /**
+     * Lists the current queue
+     * @param {Discord.Interaction} interaction
+     */
+    async listQueue(interaction) {
+        const serverQueue = this.musicQueue.get(interaction.guild.id);
+
+        if (!serverQueue) return interaction.reply("The queue is empty!");
+
+        const songs = serverQueue.songs;
+
+        if (songs.length === 0) return interaction.reply("The queue is empty!");
+
+        await interaction.deferReply({});
+
+        const embed = new Discord.MessageEmbed()
+            .setColor("#A1D3F2")
+            .setTitle("Queue")
+            .setDescription(
+                songs
+                    .map(
+                        (song, index) =>
+                            `${index + 1}. [${song.song.title}](${
+                                song.song.url
+                            })\n${song.user.tag}`
+                    )
+                    .join("\n\n")
+            )
+            .setFooter({
+                text: interaction.user.tag || "Unknown",
+                iconURL: interaction.user.avatarURL(),
+            });
+
+        await interaction.editReply({ embeds: [embed] });
     }
 }
 

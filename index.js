@@ -165,6 +165,12 @@ client.on("interactionCreate", async (interaction) => {
 
             break;
         }
+
+        case "queue": {
+            music.listQueue(interaction);
+
+            break;
+        }
     }
 });
 
@@ -203,6 +209,7 @@ function createGlobalCommands() {
         }),
         createSlashCommand("skip", "Skips the current song", {}),
         createSlashCommand("stop", "Stops the music", {}),
+        createSlashCommand("queue", "Lists all items in the music queue", {}),
     ].map((command) => command.toJSON());
 
     submitSlashCommands(commands);
