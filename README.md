@@ -6,6 +6,7 @@
     "discord": {
         "appId": "YOUR_APPLICATION_ID",
         "token": "YOUR_APPLICATION_TOKEN"
-    }
+    },
+    "logToFile": true
 }
 ```
