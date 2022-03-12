@@ -2,7 +2,8 @@ const { SlashCommandBuilder } = require("@discordjs/builders"),
     { REST } = require("@discordjs/rest"),
     { Routes } = require("discord-api-types/v9"),
     config = require("../config.json"),
-    rest = new REST({ version: "9" }).setToken(config.discord.token);
+    rest = new REST({ version: "9" }).setToken(config.discord.token),
+    log = require("./log.js");
 
 module.exports = {
     /**
@@ -14,9 +15,9 @@ module.exports = {
      */
     createSlashCommand(name, description, { options = [] } = {}) {
         if (!name || !description)
-            return console.log("[COMMANDS] No name or description given!");
+            return log("[COMMANDS] No name or description given!");
         if (options && !Array.isArray(options))
-            return console.log("[COMMANDS] Commands must be an array!");
+            return log("[COMMANDS] Commands must be an array!");
 
         let command = new SlashCommandBuilder()
             .setName(name)
@@ -26,7 +27,7 @@ module.exports = {
             const optionData = options[i];
 
             if (!optionData.type || !optionData.name || !optionData.description)
-                return console.log("[COMMANDS] Option data is missing!");
+                return log("[COMMANDS] Option data is missing!");
 
             if (optionData.type === "subcommand") {
                 command.addSubcommand((option) =>
@@ -51,7 +52,7 @@ module.exports = {
             }
         }
 
-        console.log(
+        log(
             `[COMMANDS] Created command: ${name} with ${options.length} options`
         );
 
@@ -64,8 +65,7 @@ module.exports = {
      * @param {string} guildId The guild ID to submit the commands to. Leave empty to create global commands.
      */
     submitSlashCommands(commands, guildId = false) {
-        if (!rest)
-            return console.log("[COMMANDS] REST client is not initialized!");
+        if (!rest) return log("[COMMANDS] REST client is not initialized!");
         if (!commands) return "No commands given!";
         if (!Array.isArray(commands)) return "Commands must be an array!";
         if (commands.length === 0) return "Commands array is empty!";
@@ -78,7 +78,7 @@ module.exports = {
                 }
             )
                 .then(() =>
-                    console.log(
+                    log(
                         `[COMMANDS] Successfully registered ${commands.length} application commands for ${guildId}.`
                     )
                 )
@@ -88,7 +88,7 @@ module.exports = {
                 body: commands,
             })
                 .then(() =>
-                    console.log(
+                    log(
                         `[COMMANDS] Successfully registered ${commands.length} global commands.`
                     )
                 )

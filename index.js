@@ -12,24 +12,25 @@ const Discord = require("discord.js"),
     }),
     { createSlashCommand, submitSlashCommands } = require("./utils/commands"),
     Music = require("./managers/music.js"),
-    music = new Music();
+    music = new Music(),
+    log = require("./utils/log.js");
 
 client.on("ready", () => {
     const guilds = client.guilds.cache;
 
-    console.log(`[READY] ${client.user.username} was started`);
-    console.log(`[READY] ${guilds.size} guilds were found`);
+    log(`[READY] ${client.user.username} was started`);
+    log(`[READY] ${guilds.size} guilds were found`);
 
     createGlobalCommands();
 
     guilds.forEach((guild) => {
-        console.log(`[READY] Creating basic commands for ${guild.name}`);
+        log(`[READY] Creating basic commands for ${guild.name}`);
         createBasicCommands(guild.id);
     });
 });
 
 client.on("guildCreate", (guild) => {
-    console.log("[GUILD_CREATE] Creating basic commands for " + guild.name);
+    log("[GUILD_CREATE] Creating basic commands for " + guild.name);
     createBasicCommands(guild.id);
 });
 

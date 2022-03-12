@@ -7,7 +7,8 @@ const Discord = require("discord.js"),
         createPlayer,
         getSongInfo,
         getSongBySearch,
-    } = require("../utils/music");
+    } = require("../utils/music"),
+    log = require("../utils/log.js");
 
 class Music {
     constructor() {
@@ -62,7 +63,7 @@ class Music {
             try {
                 this.play(interaction.guild, interaction);
             } catch (err) {
-                console.log("[MUSIC]", err);
+                log("[MUSIC]", err);
                 serverQueue.delete(interaction.guild.id);
 
                 return await interaction.channel.send(err);
