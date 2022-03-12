@@ -1,4 +1,5 @@
 const Discord = require("discord.js"),
+    moment = require("moment"),
     {
         createConnection,
         createStream,
@@ -142,6 +143,13 @@ class Music {
                 .addField(
                     "Duration",
                     song.duration.timestamp || "Unknown",
+                    true
+                )
+                .addField(
+                    "Ends at",
+                    `<t:${moment(new Date())
+                        .add(song.duration.seconds, "seconds")
+                        .unix()}:T>`,
                     true
                 )
                 .addField(
