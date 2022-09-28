@@ -1,4 +1,5 @@
 import { createSlashCommand, submitSlashCommands } from "./utils/commands";
+import { init as initAMRPC } from "./managers/amrpcPresence";
 
 import * as Discord from "discord.js";
 
@@ -10,9 +11,10 @@ const client = new Discord.Client({
         intents: [
             Discord.GatewayIntentBits.Guilds,
             Discord.GatewayIntentBits.GuildMessages,
-            Discord.GatewayIntentBits.DirectMessages,
             Discord.GatewayIntentBits.GuildVoiceStates,
             Discord.GatewayIntentBits.GuildMembers,
+            Discord.GatewayIntentBits.GuildPresences,
+            Discord.GatewayIntentBits.DirectMessages,
         ],
         partials: [Discord.Partials.Channel],
     }),
@@ -25,6 +27,7 @@ client.on("ready", () => {
     log(`[READY] ${guilds.size} guilds were found`);
 
     createGlobalCommands();
+    initAMRPC(client);
 
     guilds.forEach((guild) => {
         log(`[READY] Creating basic commands for ${guild.name}`);
