@@ -1,11 +1,11 @@
-const fs = require("fs"),
-    config = require("../config.json");
+import fs from "fs";
+import config from "../config.json";
 
 /**
  * Logs a message to the console and to a file
  * @param  {...any} args
  */
-function log(...args) {
+export default function log(...args) {
     const date = new Date();
 
     console.log(`[${date.toLocaleTimeString()}]`, ...args);
@@ -17,5 +17,3 @@ function log(...args) {
         );
     }
 }
-
-module.exports = log;
