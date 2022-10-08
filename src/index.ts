@@ -4,21 +4,22 @@ import { init as initAMRPC } from "./managers/amrpcPresence";
 import * as Discord from "discord.js";
 
 import Music from "./managers/music";
+import Server from "./managers/server";
 import config from "./config.json";
 import log from "./utils/log";
 
-const client = new Discord.Client({
-        intents: [
-            Discord.GatewayIntentBits.Guilds,
-            Discord.GatewayIntentBits.GuildMessages,
-            Discord.GatewayIntentBits.GuildVoiceStates,
-            Discord.GatewayIntentBits.GuildMembers,
-            Discord.GatewayIntentBits.GuildPresences,
-            Discord.GatewayIntentBits.DirectMessages,
-        ],
-        partials: [Discord.Partials.Channel],
-    }),
-    music = new Music();
+export const client = new Discord.Client({
+    intents: [
+        Discord.GatewayIntentBits.Guilds,
+        Discord.GatewayIntentBits.GuildMessages,
+        Discord.GatewayIntentBits.GuildVoiceStates,
+        Discord.GatewayIntentBits.GuildMembers,
+        Discord.GatewayIntentBits.GuildPresences,
+        Discord.GatewayIntentBits.DirectMessages,
+    ],
+    partials: [Discord.Partials.Channel],
+});
+const music = new Music();
 
 client.on("ready", () => {
     const guilds = client.guilds.cache;
@@ -33,6 +34,8 @@ client.on("ready", () => {
         log(`[READY] Creating basic commands for ${guild.name}`);
         createBasicCommands(guild.id);
     });
+
+    new Server();
 });
 
 client.on("guildCreate", (guild) => {
