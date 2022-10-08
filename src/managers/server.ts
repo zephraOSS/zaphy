@@ -29,7 +29,12 @@ export default class Server {
 
                         res.write(
                             JSON.stringify(
-                                user.roles.cache.map((role) => role.name)
+                                user.roles.cache.map((role) => {
+                                    return {
+                                        id: role.id,
+                                        name: role.name,
+                                    };
+                                })
                             )
                         );
                         res.end();
