@@ -22,7 +22,7 @@ function hasDifferentActivities(
     oldPresence: Discord.Presence,
     newPresence: Discord.Presence
 ) {
-    if (oldPresence.activities.length !== newPresence.activities.length)
+    if (oldPresence?.activities.length !== newPresence?.activities.length)
         return true;
 
     for (let i = 0; i < oldPresence.activities.length; i++) {
