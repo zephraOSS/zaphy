@@ -27,7 +27,7 @@ export default class Server {
                     if (action === "roles") {
                         const user = getUser(userId);
 
-                        if (!user) return res.end(JSON.stringify({}));
+                        if (!user) return res.end(JSON.stringify([]));
 
                         res.write(
                             JSON.stringify(
