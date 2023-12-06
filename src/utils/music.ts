@@ -1,87 +1,96 @@
-import {
-    AudioPlayer,
-    AudioResource,
-    StreamType,
-    createAudioPlayer,
-    createAudioResource,
-    joinVoiceChannel,
-    VoiceConnection,
-} from "@discordjs/voice";
-import { Guild } from "discord.js";
-
-import ytdl from "ytdl-core";
-import yts from "yt-search";
 import log from "./log";
+import moment from "moment/moment";
+
+import * as Discord from "discord.js";
 
 /**
- * Creates a new connection
- * @param {Guild} guild The guild to create the connection for
- * @param {string} channelId The channel ID to join
- * @return {VoiceConnection} The created connection
+ * Create a now playing embed
+ * @return {Discord.Embed} embed
+ * @param song
  */
-export function createConnection(
-    guild: Guild,
-    channelId: string
-): VoiceConnection | any {
-    if (!guild) return log("[MUSIC][CREATE_CONNECTION] Guild is required");
-    if (!channelId) return log("[MUSIC] Channel ID is required");
+export function createNowPlayingEmbed(
+    song
+): Discord.EmbedBuilder | any {
+    if (!song) return log("[MUSIC][CREATE_NOW_PLAYING_EMBED] Song is required");
 
-    return joinVoiceChannel({
-        channelId: channelId,
-        guildId: guild.id,
-        // @ts-ignore
-        adapterCreator: guild.voiceAdapterCreator,
-    });
+    return new Discord.EmbedBuilder()
+        .setColor("#A1D3F2")
+        .setTitle("Now playing")
+        .setThumbnail(song.thumbnail)
+        .addFields([
+            {
+                name: "Name",
+                value: `[${song.name}](${song.url})`,
+                inline: false,
+            },
+            {
+                name: "Views",
+                value: song.views.toLocaleString() || "Unknown",
+                inline: true,
+            },
+            {
+                name: "Duration",
+                value: song.formattedDuration || "Unknown",
+                inline: true,
+            },
+            {
+                name: "Ends at",
+                value: `<t:${moment(new Date())
+                    .add(song.duration, "seconds")
+                    .unix()}:T>`,
+                inline: true,
+            },
+            {
+                name: "Author",
+                value: `[${song.uploader.name}](${song.uploader.url})`,
+                inline: true,
+            },
+        ])
+        .setFooter({
+            text: song.user.tag || "Unknown",
+            iconURL: song.user.avatarURL(),
+        });
 }
 
 /**
- * Creates a new stream
- * @param {string} url The URL of the stream
- * @return {any} The created stream
+ * Create a queue embed
+ * @return {Discord.Embed} embed
+ * @param song
  */
-export function createStream(url: string) {
-    if (!url) return log("[MUSIC][CREATE_STREAM] URL is required");
+export function createQueueAddedEmbed(
+    song
+): Discord.EmbedBuilder | any {
+    if (!song) return log("[MUSIC][CREATE_QUEUE_ADDED_EMBED] Song is required");
 
-    return ytdl(url, {
-        filter: "audioonly",
-    });
-}
-
-/**
- * Creates a new audio resource
- * @param {any} stream The stream to create the resource from
- * @return {AudioResource} The created audio resource
- */
-export function createResource(stream: any): AudioResource | any {
-    if (!stream) return log("[MUSIC][CREATE_RESOURCE] Stream is required");
-    if (!stream.on)
-        return log("[MUSIC][CREATE_RESOURCE] Stream is not readable");
-
-    return createAudioResource(stream, {
-        inputType: StreamType.Arbitrary,
-    });
-}
-
-/**
- * Creates a new audio player
- * @return {AudioPlayer} The created audio player
- */
-export function createPlayer(): AudioPlayer {
-    return createAudioPlayer();
-}
-
-/**
- * Get information about a song
- * @param {string} url The URL of the song
- */
-export function getSongInfo(url: string) {
-    return ytdl.getInfo(url);
-}
-
-/**
- * Get song information from a search query
- * @param {string} query The search query
- */
-export function getSongBySearch(query: string) {
-    return yts(query);
+    return new Discord.EmbedBuilder()
+        .setColor("#A1D3F2")
+        .setTitle("Added to queue")
+        .setThumbnail(song.thumbnail)
+        .addFields([
+            {
+                name: "Name",
+                value: `[${song.name}](${song.url})`,
+                inline: false,
+            },
+            {
+                name: "Views",
+                value:
+                    song.views.toLocaleString() || "Unknown",
+                inline: true,
+            },
+            {
+                name: "Duration",
+                value: song.formattedDuration || "Unknown",
+                inline: true,
+            },
+            {
+                name: "Author",
+                value: `[${song.uploader.name}](${song.uploader.url})`,
+                inline: true,
+            },
+        ])
+        .setFooter({
+            text: song.user.tag || "Unknown",
+            iconURL: song.user.avatarURL(),
+        });
 }

@@ -7,6 +7,7 @@ import Music from "./managers/music";
 import Server from "./managers/server";
 import config from "./config.json";
 import log from "./utils/log";
+import { DisTube } from "distube";
 
 export const client = new Discord.Client({
     intents: [
@@ -19,6 +20,14 @@ export const client = new Discord.Client({
     ],
     partials: [Discord.Partials.Channel],
 });
+
+export const disTube = new DisTube(client, {
+    emitNewSongOnly: true,
+    leaveOnFinish: true,
+    leaveOnEmpty: true,
+    leaveOnStop: true,
+});
+
 const music = new Music();
 
 client.on("ready", () => {
@@ -135,7 +144,7 @@ client.on(
             }
 
             case "play": {
-                await music.setup(interaction);
+                await music.play(interaction.guild, interaction);
 
                 break;
             }
@@ -173,9 +182,9 @@ function createBasicCommands(guildId) {
 
 function createGlobalCommands() {
     const commands = [
-        createSlashCommand("ping", "Replies with pong!", {}),
-        createSlashCommand("server", "Replies with server info!", {}),
-        createSlashCommand("user", "Replies with user info!", {
+        createSlashCommand("ping", "Replies with pong", {}),
+        createSlashCommand("server", "Replies with server info", {}),
+        createSlashCommand("user", "Replies with user info", {
             options: [
                 {
                     type: "userOption",
@@ -184,7 +193,7 @@ function createGlobalCommands() {
                 },
             ],
         }),
-        createSlashCommand("play", "Play music from YouTube", {
+        createSlashCommand("play", "Plays music from YouTube", {
             options: [
                 {
                     type: "stringOption",
@@ -194,9 +203,9 @@ function createGlobalCommands() {
                 },
             ],
         }),
-        createSlashCommand("skip", "Skips the current song", {}),
-        createSlashCommand("stop", "Stops the music", {}),
-        createSlashCommand("queue", "Lists all items in the music queue", {}),
+        createSlashCommand("skip", "Skips current song", {}),
+        createSlashCommand("stop", "Stops music", {}),
+        createSlashCommand("queue", "Lists all items in music queue", {}),
     ].map((command: any) => command.toJSON());
 
     submitSlashCommands(commands);
